@@ -321,14 +321,19 @@ public class JsonViewSerializer extends JsonSerializer<JsonView> {
     }
 
     void write(String fieldName, Object value) throws IOException {
-      if(fieldName != null) {
+	  if(fieldName != null) {
         path.push(fieldName);
         updateCurrentPath();
       }
 
       //try to handle all primitives/special cases before treating this as json object
       if(!writePrimitive(value) && !writeSpecial(value) && !writeEnum(value) && !writeList(value) && !writeMap(value)) {
-        writeObject(value);
+    	//If maximum depth has crossed, send a null
+        if(result.maxDepth>0 && path.size()>result.maxDepth) {
+        	writePrimitive(null);
+      	} else {
+      		writeObject(value);
+      	}
       }
 
       if(fieldName != null) {

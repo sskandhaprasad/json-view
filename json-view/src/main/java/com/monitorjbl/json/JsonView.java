@@ -9,6 +9,7 @@ import java.util.Map;
 public class JsonView<T> {
   protected final T value;
   protected final Map<Class<?>, Match> matches = new HashMap<>();
+  protected int maxDepth = 0;
 
   protected JsonView(T value) {
     this.value = value;
@@ -30,5 +31,16 @@ public class JsonView<T> {
   public static <E> JsonView<E> with(E value) {
     return new JsonView<>(value);
   }
+
+  public int getMaxDepth() {
+  	return maxDepth;
+  }
+	
+  public JsonView<T> setMaxDepth(int maxDepth) {
+	this.maxDepth = maxDepth;
+	return this;
+  }
+  
+  
 
 }
