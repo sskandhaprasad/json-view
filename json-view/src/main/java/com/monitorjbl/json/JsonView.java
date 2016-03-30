@@ -10,6 +10,7 @@ public class JsonView<T> {
   protected final T value;
   protected final Map<Class<?>, Match> matches = new HashMap<>();
   protected int maxDepth = 0;
+  protected boolean ignoreCircularReferences = false;
 
   protected JsonView(T value) {
     this.value = value;
@@ -40,6 +41,12 @@ public class JsonView<T> {
 	this.maxDepth = maxDepth;
 	return this;
   }
+
+  public JsonView<T> ignoreCircularReferences(boolean ignoreCircularReferences) {
+	this.ignoreCircularReferences = ignoreCircularReferences;
+	return this;
+  }
+  
   
   
 

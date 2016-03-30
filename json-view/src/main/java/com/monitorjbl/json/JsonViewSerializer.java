@@ -35,6 +35,7 @@ public class JsonViewSerializer extends JsonSerializer<JsonView> {
 
   static class JsonWriter {
     Stack<String> path = new Stack<>();
+    Stack<Object> valuePath = new Stack<>();
     String currentPath = "";
     Match currentMatch = null;
 
@@ -57,13 +58,23 @@ public class JsonViewSerializer extends JsonSerializer<JsonView> {
     }
 
     private JsonWriter(JsonGenerator jgen, JsonView result, Match currentMatch,
-                       String currentPath, Stack<String> path, SerializerProvider serializerProvider) {
+                       String currentPath, Stack<String> path, Stack<Object> valuePath, SerializerProvider serializerProvider) {
       this.jgen = jgen;
       this.result = result;
       this.currentMatch = currentMatch;
       this.currentPath = currentPath;
       this.path = path;
+      this.valuePath = valuePath;
       this.serializerProvider = serializerProvider;
+    }
+    
+    boolean isValueAlreadyVisited(Object value) {
+    	for(int i=valuePath.size()-1; i>=0; i--) {
+    		if(valuePath.elementAt(i) == value) { //Comparing references to see check for equality
+    			return true;
+    		}
+    	}
+    	return false;
     }
 
     boolean writePrimitive(Object obj) throws IOException {
@@ -134,7 +145,7 @@ public class JsonViewSerializer extends JsonSerializer<JsonView> {
 
         jgen.writeStartArray();
         for(Object o : iter) {
-          new JsonWriter(jgen, result, currentMatch, currentPath, path, serializerProvider).write(null, o);
+          new JsonWriter(jgen, result, currentMatch, currentPath, path, valuePath, serializerProvider).write(null, o);
         }
         jgen.writeEndArray();
       } else {
@@ -225,7 +236,7 @@ public class JsonViewSerializer extends JsonSerializer<JsonView> {
             if(valueAllowed(val, obj.getClass()) && fieldAllowed(field, obj.getClass())) {
               String name = field.getName();
               jgen.writeFieldName(name);
-              new JsonWriter(jgen, result, currentMatch, currentPath, path, serializerProvider).write(name, val);
+              new JsonWriter(jgen, result, currentMatch, currentPath, path, valuePath, serializerProvider).write(name, val);
             }
           } catch(IllegalArgumentException | IllegalAccessException e) {
             e.printStackTrace();
@@ -329,10 +340,13 @@ public class JsonViewSerializer extends JsonSerializer<JsonView> {
       //try to handle all primitives/special cases before treating this as json object
       if(!writePrimitive(value) && !writeSpecial(value) && !writeEnum(value) && !writeList(value) && !writeMap(value)) {
     	//If maximum depth has crossed, send a null
-        if(result.maxDepth>0 && path.size()>result.maxDepth) {
+        if((result.maxDepth>0 && path.size()>result.maxDepth) 
+        		|| (result.ignoreCircularReferences && isValueAlreadyVisited(value))) {
         	writePrimitive(null);
       	} else {
+      		valuePath.push(value); 
       		writeObject(value);
+      		valuePath.pop();
       	}
       }
 
